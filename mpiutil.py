@@ -9,8 +9,8 @@ _comm = None
 world = None
 rank0 = True
 
-## Try to setup MPI and get the comm, rank and size.
-## If not they should end up as rank=0, size=1.
+# Try to setup MPI and get the comm, rank and size.
+# If not they should end up as rank=0, size=1.
 try:
     from mpi4py import MPI
 
@@ -51,11 +51,7 @@ def partition_list_mpi(full_list):
 def mpirange(*args):
     """An MPI aware version of `range`, each process gets its own sub section."""
     full_list = list(range(*args))
-
-    # if alternate:
     return partition_list_alternate(full_list, rank, size)
-    # else:
-    #    return np.array_split(full_list, size)[rank]
 
 
 def barrier():
@@ -441,7 +437,7 @@ def lock_and_write_buffer(obj, fname, offset, size):
     import os
     import os.fcntl as fcntl
 
-    buf = buffer(obj)
+    buf = memoryview(obj)
 
     if len(buf) > size:
         raise Exception("Size doesn't match array length.")
@@ -461,7 +457,7 @@ def lock_and_write_buffer(obj, fname, offset, size):
 
 
 def parallel_rows_write_hdf5(fname, dsetname, local_data, shape, comm=None):
-    """Write out array (distributed across processes row wise) into a HDF5 in parallel."""
+    """Write out array (distributed across processes row wise) into HDF5 in parallel."""
 
     if not comm:
         comm = MPI.COMM_WORLD
