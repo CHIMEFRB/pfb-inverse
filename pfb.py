@@ -1,11 +1,8 @@
 import numpy as np
 import scipy.linalg as la
 
-
-# Routine wrapping Lapack dgbmv
 def band_mv(A, kl, ku, n, m, x, trans=False):
-    """Simple wrapper about BLAS for band matrix-vector multiplication.
-
+    """Simple wrapper about Scipy binding of BLAS for band matrix-vector multiplication.
     Parameters
     ----------
     A : np.ndarray[:, :]
@@ -20,25 +17,18 @@ def band_mv(A, kl, ku, n, m, x, trans=False):
         Vector to multiply.
     trans : boolean, optional
         If False (default), multiply with A, if True multiply with A^T
-
     Returns
     -------
     y : np.ndarray
         Output vector.
     """
-    import dgbmv
-
+    from scipy.linalg.blas import dgbmv
     y = np.zeros(n if trans else m, dtype=np.float64)
-
     lda = kl + ku + 1
-
     if lda != A.shape[0]:
-        raise Exception("A does not match the number of diagonals specified.")
-
-    dgbmv.dgbmv("T" if trans else "N", m, kl, ku, 1.0, A, x, 1, 0.0, y, 1)
-
+        raise Exception('A does not match the number of diagonals specified.')
+    dgbmv(m, n, kl, ku, 1.0, A, x, 1, 0, 0.0, y, 1, 0 , 1 if trans else 0, 1)
     return y
-
 
 def sinc_window(ntap, lblock):
     """Sinc window function.
@@ -145,7 +135,6 @@ def pfb(timestream, nfreq, ntap=4, window=sinc_hamming):
         spec[bi] = ft[::ntap]
 
     return spec
-
 
 def inverse_pfb(ts_pfb, ntap, window=sinc_hamming, no_nyquist=False):
     """Invert the CHIME PFB timestream.
