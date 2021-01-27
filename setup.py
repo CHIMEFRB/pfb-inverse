@@ -38,4 +38,5 @@ setup(
     ext_modules=[dgbmv_ext],
     packages=find_packages(),
     install_requires=["numpy", "h5py", "mpi4py", "scipy"],
+    setup_requires=["numpy"]
 )
