@@ -1,7 +1,7 @@
 !    -*- f90 -*-
 ! Note: the context of this file is case sensitive.
 
-python module dgbmv ! in 
+python module dgbmv ! in
     interface  ! in :dgbmv
         subroutine dgbmv(trans,m,n,kl,ku,alpha,a,lda,x,incx,beta,y,incy) ! in :dgbmv:dgbmv.f
             character :: trans
@@ -18,7 +18,7 @@ python module dgbmv ! in
             double precision dimension(*) :: y
             integer :: incy
         end subroutine dgbmv
-    end interface 
+    end interface
 end python module dgbmv
 
 ! This file was auto-generated with f2py (version:2).

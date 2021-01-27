@@ -1,5 +1,5 @@
-import warnings
 import sys
+import warnings
 
 import numpy as np
 
@@ -16,24 +16,24 @@ try:
 
     _comm = MPI.COMM_WORLD
     world = _comm
-    
+
     rank = _comm.Get_rank()
     size = _comm.Get_size()
 
     if rank:
-        print "MPI process %i of %i." % (rank, size)
+        print("MPI process %i of %i." % (rank, size))
 
     rank0 = True if rank == 0 else False
 
-    sys_excepthook = sys.excepthook 
-    
-    def mpi_excepthook(type, value, traceback): 
-        sys_excepthook(type, value, traceback) 
+    sys_excepthook = sys.excepthook
+
+    def mpi_excepthook(type, value, traceback):
+        sys_excepthook(type, value, traceback)
         MPI.COMM_WORLD.Abort(1)
 
-    sys.excepthook = mpi_excepthook 
-    
-    
+    sys.excepthook = mpi_excepthook
+
+
 except ImportError:
     warnings.warn("Warning: mpi4py not installed.")
 
@@ -49,13 +49,12 @@ def partition_list_mpi(full_list):
 
 
 def mpirange(*args):
-    """An MPI aware version of `range`, each process gets its own sub section.
-    """
-    full_list = range(*args)
-    
-    #if alternate:
+    """An MPI aware version of `range`, each process gets its own sub section."""
+    full_list = list(range(*args))
+
+    # if alternate:
     return partition_list_alternate(full_list, rank, size)
-    #else:
+    # else:
     #    return np.array_split(full_list, size)[rank]
 
 
@@ -158,14 +157,14 @@ def split_m(n, m):
     --------
     `split_all`, `split_local`
     """
-    base = (n / m)
+    base = n / m
     rem = n % m
 
     part = base * np.ones(m, dtype=np.int) + (np.arange(m) < rem).astype(np.int)
 
     bound = np.cumsum(np.insert(part, 0, 0))
 
-    return np.array([part, bound[:m], bound[1:(m + 1)]])
+    return np.array([part, bound[:m], bound[1 : (m + 1)]])
 
 
 def split_all(n, comm=None):
@@ -193,7 +192,7 @@ def split_all(n, comm=None):
     `split_all`, `split_local`
     """
     m = size if comm is None else comm.size
-    
+
     return split_m(n, m)
 
 
@@ -224,7 +223,7 @@ def split_local(n, comm=None):
     """
     pse = split_all(n, comm=comm)
     m = rank if comm is None else comm.rank
-    
+
     return pse[:, m]
 
 
@@ -250,14 +249,14 @@ def transpose_blocks(row_array, shape, comm=None):
 
     if not comm:
         try:
-            comm=MPI.COMM_WORLD
+            comm = MPI.COMM_WORLD
         except NameError:
             if row_array.shape[:-1] == shape[:-1]:
                 # We are working on a single node and being asked to do the
                 # a trivial transpose.
                 # Note that to mimic the mpi behaviour we have to allow the
                 # last index to be trimmed.
-                return row_array[...,:shape[-1]].copy()
+                return row_array[..., : shape[-1]].copy()
             else:
                 raise
 
@@ -271,7 +270,7 @@ def transpose_blocks(row_array, shape, comm=None):
     par, sar, ear = split_all(nr, comm=comm) * nm
     pac, sac, eac = split_all(nc, comm=comm)
 
-    #print pr, nc, shape, row_array.shape
+    # print pr, nc, shape, row_array.shape
 
     row_array = row_array[:nr, ..., :nc].reshape(pr, nc)
 
@@ -284,13 +283,13 @@ def transpose_blocks(row_array, shape, comm=None):
 
     # Iterate over all processes row wise
     for ir in range(comm.size):
-                
+
         # Get the start and end of each set of rows
         sir, eir = sar[ir], ear[ir]
 
         # Iterate over all processes column wise
         for ic in range(comm.size):
-                    
+
             # Get the start and end of each set of columns
             sic, eic = sac[ic], eac[ic]
 
@@ -303,7 +302,7 @@ def transpose_blocks(row_array, shape, comm=None):
                 # Construct the block to send by cutting out the correct
                 # columns
                 block = row_array[:, sic:eic].copy()
-                #print ir, ic, comm.rank, block.shape
+                # print ir, ic, comm.rank, block.shape
 
                 # Send the message
                 request = comm.Isend([block, mpitype], dest=ic, tag=tag)
@@ -312,9 +311,11 @@ def transpose_blocks(row_array, shape, comm=None):
             if comm.rank == ic:
 
                 # Receive the message into the correct set of rows of recv_buffer
-                request = comm.Irecv([recv_buffer[sir:eir], mpitype], source=ir, tag=tag)
+                request = comm.Irecv(
+                    [recv_buffer[sir:eir], mpitype], source=ir, tag=tag
+                )
                 requests_recv.append([ir, ic, request])
-                #print ir, ic, comm.rank, recv_buffer[sir:eir].shape
+                # print ir, ic, comm.rank, recv_buffer[sir:eir].shape
 
     # Wait for all processes to have started their messages
     comm.Barrier()
@@ -324,16 +325,18 @@ def transpose_blocks(row_array, shape, comm=None):
 
         stat = MPI.Status()
 
-        #try:
+        # try:
         request.Wait(status=stat)
-        #except MPI.Exception:
+        # except MPI.Exception:
         #    print comm.rank, ir, ic, sar[ir], ear[ir], sac[ic], eac[ic], shape
 
         if stat.error != MPI.SUCCESS:
-            print "**** ERROR in MPI SEND (r: %i c: %i rank: %i) *****" % (ir, ic, comm.rank)
+            print(
+                "**** ERROR in MPI SEND (r: %i c: %i rank: %i) *****"
+                % (ir, ic, comm.rank)
+            )
 
-
-    #print "rank %i: Done waiting on MPI SEND" % comm.rank
+    # print "rank %i: Done waiting on MPI SEND" % comm.rank
 
     comm.Barrier()
 
@@ -342,14 +345,17 @@ def transpose_blocks(row_array, shape, comm=None):
 
         stat = MPI.Status()
 
-        #try:
+        # try:
         request.Wait(status=stat)
-        #except MPI.Exception:
+        # except MPI.Exception:
         #    print comm.rank, (ir, ic), (ear[ir]-sar[ir], eac[ic]-sac[ic]),
-        #shape, recv_buffer[sar[ir]:ear[ir]].shape, recv_buffer.dtype, row_array.dtype
+        # shape, recv_buffer[sar[ir]:ear[ir]].shape, recv_buffer.dtype, row_array.dtype
 
         if stat.error != MPI.SUCCESS:
-            print "**** ERROR in MPI RECV (r: %i c: %i rank: %i) *****" % (ir, ir, comm.rank)
+            print(
+                "**** ERROR in MPI RECV (r: %i c: %i rank: %i) *****"
+                % (ir, ir, comm.rank)
+            )
 
     return recv_buffer.reshape(shape[:-1] + (pc,))
 
@@ -385,14 +391,14 @@ def allocate_hdf5_dataset(fname, dsetname, shape, dtype, comm=None):
     import h5py
 
     if not comm:
-        comm=MPI.COMM_WORLD
+        comm = MPI.COMM_WORLD
 
     state = None
 
     if comm.rank == 0:
 
         # Create/open file
-        f = h5py.File(fname, 'a')
+        f = h5py.File(fname, "a")
 
         # Create dataspace and HDF5 datatype
         sp = h5py.h5s.create_simple(shape, shape)
@@ -455,19 +461,17 @@ def lock_and_write_buffer(obj, fname, offset, size):
 
 
 def parallel_rows_write_hdf5(fname, dsetname, local_data, shape, comm=None):
-    """Write out array (distributed across processes row wise) into a HDF5 in parallel.
-
-    """
+    """Write out array (distributed across processes row wise) into a HDF5 in parallel."""
 
     if not comm:
-        comm=MPI.COMM_WORLD
+        comm = MPI.COMM_WORLD
 
-    offset, size = allocate_hdf5_dataset(fname, dsetname, shape, local_data.dtype, comm=comm)
+    offset, size = allocate_hdf5_dataset(
+        fname, dsetname, shape, local_data.dtype, comm=comm
+    )
 
     lr, sr, er = split_local(shape[0], comm=comm)
 
     nc = np.prod(shape[1:])
 
     lock_and_write_buffer(local_data, fname, offset + sr * nc, lr * nc)
-
-

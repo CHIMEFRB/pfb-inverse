@@ -33,9 +33,9 @@ def band_mv(A, kl, ku, n, m, x, trans=False):
     lda = kl + ku + 1
 
     if lda != A.shape[0]:
-        raise Exception('A does not match the number of diagonals specified.')
+        raise Exception("A does not match the number of diagonals specified.")
 
-    dgbmv.dgbmv('T' if trans else 'N', m, kl, ku, 1.0, A, x, 1, 0.0, y, 1)
+    dgbmv.dgbmv("T" if trans else "N", m, kl, ku, 1.0, A, x, 1, 0.0, y, 1)
 
     return y
 
@@ -58,8 +58,9 @@ def sinc_window(ntap, lblock):
     coeff_num_samples = ntap * lblock
 
     # Sampling locations of sinc function
-    X = np.arange(-coeff_length / 2.0, coeff_length / 2.0,
-                  coeff_length / coeff_num_samples)
+    X = np.arange(
+        -coeff_length / 2.0, coeff_length / 2.0, coeff_length / coeff_num_samples
+    )
 
     # np.sinc function is sin(pi*x)/pi*x, not sin(x)/x, so use X/pi
     return np.sinc(X / np.pi)
@@ -135,7 +136,7 @@ def pfb(timestream, nfreq, ntap=4, window=sinc_hamming):
     # Iterate over blocks and perform the PFB
     for bi in range(nblock):
         # Cut out the correct timestream section
-        ts_sec = timestream[(bi*lblock):((bi+ntap)*lblock)].copy()
+        ts_sec = timestream[(bi * lblock) : ((bi + ntap) * lblock)].copy()
 
         # Perform a real FFT (with applied window function)
         ft = np.fft.rfft(ts_sec * w)
@@ -184,10 +185,14 @@ def inverse_pfb(ts_pfb, ntap, window=sinc_hamming, no_nyquist=False):
     coeff_P = window(ntap, lblock).reshape(ntap, lblock)
 
     # Coefficients for the PP^T matrix
-    coeff_PPT = np.array([(coeff_P[:, np.newaxis, :] *
-                           coeff_P[np.newaxis, :, :])
-                          .diagonal(offset=k).sum(axis=-1)
-                          for k in range(ntap)])
+    coeff_PPT = np.array(
+        [
+            (coeff_P[:, np.newaxis, :] * coeff_P[np.newaxis, :, :])
+            .diagonal(offset=k)
+            .sum(axis=-1)
+            for k in range(ntap)
+        ]
+    )
 
     rec_ts = np.zeros((lblock, ntsblock), dtype=np.float64)
 
@@ -213,8 +218,14 @@ def inverse_pfb(ts_pfb, ntap, window=sinc_hamming, no_nyquist=False):
     return rec_ts
 
 
-def inverse_pfb_parallel(ts_pfb, ntap, nblock, window=sinc_hamming,
-                         no_nyquist=False, skip_initial_blocks=True):
+def inverse_pfb_parallel(
+    ts_pfb,
+    ntap,
+    nblock,
+    window=sinc_hamming,
+    no_nyquist=False,
+    skip_initial_blocks=True,
+):
     """Invert the CHIME PFB timestream.
 
     Parameters
@@ -261,10 +272,14 @@ def inverse_pfb_parallel(ts_pfb, ntap, nblock, window=sinc_hamming,
     coeff_P = window(ntap, lblock).reshape(ntap, lblock)[:, start_off:end_off]
 
     # Coefficients for the PP^T matrix
-    coeff_PPT = np.array([(coeff_P[:, np.newaxis, :] *
-                           coeff_P[np.newaxis, :, :])
-                          .diagonal(offset=k).sum(axis=-1)
-                          for k in range(ntap)])
+    coeff_PPT = np.array(
+        [
+            (coeff_P[:, np.newaxis, :] * coeff_P[np.newaxis, :, :])
+            .diagonal(offset=k)
+            .sum(axis=-1)
+            for k in range(ntap)
+        ]
+    )
 
     ax2size = nblock if skip_initial_blocks else ntsblock
     rec_ts = np.zeros((local_off, ax2size), dtype=np.float64)
@@ -289,7 +304,7 @@ def inverse_pfb_parallel(ts_pfb, ntap, nblock, window=sinc_hamming,
 
         # Trim off initial blocks
         if skip_initial_blocks:
-            tt = tt[(ntap-1):]
+            tt = tt[(ntap - 1) :]
 
         rec_ts[i_off] = tt
 
